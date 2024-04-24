@@ -11,7 +11,7 @@
 ![alt text](video.gif)
 
 ## 如何构建文件
-`g++ -o main main.cpp -lncurses
+`g++ -o main main.cpp -lncurses`
 
 
 ### 有空会不定时更新
