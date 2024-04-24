@@ -133,7 +133,7 @@ void remove_line(){
 // check if placing p at (x,y,r) will be a collision
 int check_hit(int x, int y, int r, int shapes) {
     int a=0;
-    if (y + shape_type[shapes][r][9] > 19) {
+    if (y + shape_type[shapes][r][9] > 20) {
         return 1;
     }
     set_piece(px, py, pr, shapes, 0);
