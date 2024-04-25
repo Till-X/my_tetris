@@ -8,12 +8,15 @@
 #include <termios.h>
 #include <unistd.h>
 
+// (px, py)为当前方块所在的坐标
+// (x, y)为下一时刻所在坐标
 int x,y,r,px,py,pr,shapes,colors;
-int lines;
 int score;
-int my_key;
+int my_key;// 按键返回值
 long start;
 bool game=1;
+
+// 创建一个空间为20*10的虚拟内存空间
 int board[20][10];
 
 // 数据形式为: 『x1,x2,x3,x4,y1,y2,y3,y4,  W,H}
@@ -121,7 +124,7 @@ void frame(){
 void remove_line(){
     for (int row = y; row <= y + shape_type[shapes][r][9]; row++) {
     // 从当前方块所在的行y开始，循环至当前方块底部的行为止  注意：是以当前方块为一个基准进行判断的
-        lines = 1;
+        int lines = 1;
         for(int i = 0; i < 10; i++){
             lines *= board[row][i]; // 利用乘法的操作进行判断一行中的每一个格子是否为空
         }
