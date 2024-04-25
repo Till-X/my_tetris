@@ -16,6 +16,7 @@ long start;
 bool game=1;
 int board[20][10];
 
+// 数据形式为: 『x1,x2,x3,x4,y1,y2,y3,y4,  W,H}
 int shape_type[7][4][10] = {
     //O
     {
@@ -70,7 +71,7 @@ int shape_type[7][4][10] = {
 
 };
 
-// create a new piece, don't remove old one (it has landed and should stick)
+// 随机生成一个新的方块
 void new_piece() {
   y = py = 0;
   shapes = rand() % 7;
@@ -79,22 +80,24 @@ void new_piece() {
   colors = rand() % 7 + 1;
 }
 
+// 在虚拟内存空间中绘制一个方块
 void set_piece(int x, int y, int r, int shapes, int color) {
   for (int i = 0; i < 4; i++) {
     board[shape_type[shapes][r][i] + y][shape_type[shapes][r][i+4] + x] = color;
   }
 }
 
-// move a piece from old (p*) coords to new
+// 清除当前 (px,py) 处的方块，并且在 (x,y) 处绘制新的方块
 void update_piece() {
    set_piece(px, py, pr, shapes, 0);
    set_piece(px = x, py = y, pr = r, shapes, colors);
 }
 
+// 将虚拟内存中的数据更新到屏幕上
 void frame(){
     for (int i = 0; i < 20; i++) {
         for (int j = 0; j < 10; j++) {
-           move(1 + i, j * 2 + 1); // otherwise the box won't draw
+           move(1 + i, j * 2 + 1); 
            if(board[i][j] != 0){
                 attron(A_REVERSE);
                 attron(COLOR_PAIR(board[i][j]));
@@ -114,40 +117,44 @@ void frame(){
     refresh();
 }
 
+// 检测是否排满一行，是否清除
 void remove_line(){
     for (int row = y; row <= y + shape_type[shapes][r][9]; row++) {
+    // 从当前方块所在的行y开始，循环至当前方块底部的行为止  注意：是以当前方块为一个基准进行判断的
         lines = 1;
         for(int i = 0; i < 10; i++){
-            lines *= board[row][i];
+            lines *= board[row][i]; // 利用乘法的操作进行判断一行中的每一个格子是否为空
         }
         if(lines){
             for (int i = row - 1; i > 0; i--) {
                 memcpy(&board[i + 1][0], &board[i][0], 40);
+                // 将上一行的内容复制到当前行的位置，将上面的行向下移动一格。这里使用了 memcpy 函数来进行内存拷贝。
             }
-            memset(&board[0][0], 0, 10);
+            memset(&board[0][0], 0, 10); // 最顶层进行清空，他的上一层是没有东西可以进行复制了的
             score++;
         }
     }
 }
 
-// check if placing p at (x,y,r) will be a collision
+// 检测是否会发生碰撞，只是检测，并不会更新虚拟内存空间
 int check_hit(int x, int y, int r, int shapes) {
     int a=0;
     if (y + shape_type[shapes][r][9] > 20) {
         return 1;
-    }
-    set_piece(px, py, pr, shapes, 0);
+    }// 这里检查的是：当前y值是否已经到达底部 到达底部  返回1
+    set_piece(px, py, pr, shapes, 0);// 先清空当前的方块，防止干扰检测
     for (int i = 0; i < 4; i++) {
         a += board[shape_type[shapes][r][i] + y][shape_type[shapes][r][i+4] + x];
     } 
     if(a != 0){
-        set_piece(px, py, pr, shapes, colors);
+        set_piece(px, py, pr, shapes, colors);// 检测到碰撞后，需要恢复被清除的当前方块
         return 1;
     }
     set_piece(px, py, pr, shapes, colors);
     return 0;
 }
 
+// 处理按键的返回值，左移、右翼、变形、快速下降、退出游戏
 void runloop(){
     if(my_key == 'a' && x > 0 && !check_hit(x - 1,y,r,shapes)){
         x--;
@@ -165,9 +172,11 @@ void runloop(){
     }
     if(my_key == 'w'){
         ++r %= 4;
+        // 变形后撞墙，左移动避开
         while (x + shape_type[shapes][r][8] > 9) {
             x--;
         }
+        // 无法避开的情况，恢复原来形状
         if (check_hit(x,y,r,shapes)) {
             x = px;
             r = pr;
@@ -181,6 +190,7 @@ void runloop(){
     frame();
 }
 
+// 由于Linux环境下没有kbhit函数，手动实现(该函数由chatgpt编写)
 int kbhit(void)
 {
     struct termios oldt, newt;
@@ -202,6 +212,7 @@ int kbhit(void)
     return 0;
 }
 
+// 按键检测函数
 void key_check(){
     char ch;
     if(kbhit()){
@@ -220,15 +231,15 @@ int main(){
     srand(time(0));
     initscr();
     start_color();
-    // colours indexed by their position in the block
+    // 初始化颜色对  这里是七个形状，因此，也是对应着这里的7个颜色
     for (int i = 1; i < 8; i++) {
-        init_pair(i, i, 0);
+        init_pair(i, i, 0);// 使用前景色和背景色初始化一个颜色对。
     }
-    new_piece();
-    resize_term(22, 22);
-    noecho();
-    curs_set(0);
-    box(stdscr, 0, 0);
+    new_piece();// 为俄罗斯方块游戏创建一个新的游戏块。
+    resize_term(22, 22);// 调整终端屏幕的尺寸为 22x22
+    noecho();// 禁止将输入的字符自动显示在屏幕上。
+    curs_set(0);// 将光标可见性设置为不可见。用于控制终端光标可见性的函数调用 可以达到隐藏光标的能力
+    box(stdscr, 0, 0);// 在标准终端窗口中周围绘制一个带有边框的方框。
     start = clock();
     while(game){
         key_check();
